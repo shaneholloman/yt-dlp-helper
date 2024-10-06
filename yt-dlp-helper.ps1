@@ -8,7 +8,7 @@
     custom format selection, and playlist handling.
 
 .NOTES
-    Version: 1.5.1
+    Version: 1.5.2
     Author: Shane Holloman
     GitHub: https://github.com/shaneholloman
 
@@ -90,13 +90,21 @@ if ($debug) {
     Returns a string containing the appropriate yt-dlp format options.
 #>
 function Set-Format {
-    Switch ($choice) {
-        1 { Write-Output $null } # Automatic default (best video + audio muxed)
-        2 { Write-Output "-f best" } # Best quality audio+video single file, no mux
-        3 { Write-Output "-f bestvideo+bestaudio/best --merge-output-format mp4" } # Highest quality video and audio, combined
-        4 { Write-Output "-f $format --merge-output-format mp4" } # Custom video and audio formats, combined
-        5 { Write-Output "-f $format" } # Download only audio or video
-        6 { Write-Output "-f $format" } # Specific single audio+video file
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param (
+        [Parameter(Mandatory=$true)]
+        [int]$choice
+    )
+
+    if ($PSCmdlet.ShouldProcess("Setting format based on user choice")) {
+        Switch ($choice) {
+            1 { Write-Output $null } # Automatic default (best video + audio muxed)
+            2 { Write-Output "-f best" } # Best quality audio+video single file, no mux
+            3 { Write-Output "-f bestvideo+bestaudio/best --merge-output-format mp4" } # Highest quality video and audio, combined
+            4 { Write-Output "-f $format --merge-output-format mp4" } # Custom video and audio formats, combined
+            5 { Write-Output "-f $format" } # Download only audio or video
+            6 { Write-Output "-f $format" } # Specific single audio+video file
+        }
     }
 }
 
@@ -162,8 +170,13 @@ function Get-CustomFormats {
     Note that administrative privileges may be required for the update process.
 #>
 function Update-Program {
-    & $downloader_exe --update
-    exit
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param()
+
+    if ($PSCmdlet.ShouldProcess("yt-dlp", "Update")) {
+        & $downloader_exe --update
+        exit
+    }
 }
 
 <#
@@ -219,9 +232,16 @@ function Test-DualUrl {
     Returns the URL with the playlist component removed.
 #>
 function Remove-PlaylistFromUrl {
-    param($url)
-    $url = $url -replace "&list=[^&]+", ""
-    return $url
+    [CmdletBinding(SupportsShouldProcess=$true)]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$url
+    )
+
+    if ($PSCmdlet.ShouldProcess($url, "Remove playlist component")) {
+        $url = $url -replace "&list=[^&]+", ""
+        return $url
+    }
 }
 
 <#
@@ -299,7 +319,7 @@ while ($confirm -ne "y") {
     $choice = Read-Host "Type your choice number"
     if (($choice -eq 4) -or ($choice -eq 5) -or ($choice -eq 6)) { $format = Get-CustomFormats }
     if ($choice -eq 7) { Update-Program }
-    $format = Set-Format
+    $format = Set-Format -choice $choice
     if (-not $isPlaylist) {
         $confirm = Test-Format
     } else {
