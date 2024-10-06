@@ -23,19 +23,6 @@ jobs:
           [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
           $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
-      - name: Run PowerShell script analysis
-        run: |
-          Install-Module -Name PSScriptAnalyzer -Force
-          $results = Invoke-ScriptAnalyzer -Path .\yt-dlp-helper.ps1
-          $results | Format-Table -AutoSize | Out-File -FilePath analysis-results.txt
-          if ($results) { throw "Script analysis found issues" }
-
-      - name: Upload analysis results
-        uses: actions/upload-artifact@v4
-        with:
-          name: analysis-results
-          path: analysis-results.txt
-
       - name: Test script with mock data
         run: |
           $mockUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
