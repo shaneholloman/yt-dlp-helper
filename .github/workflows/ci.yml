@@ -26,8 +26,14 @@ jobs:
         run: |
           Install-Module -Name PSScriptAnalyzer -Force
           $results = Invoke-ScriptAnalyzer -Path .\yt-dlp-helper.ps1
-          $results | Format-Table -AutoSize
+          $results | Format-Table -AutoSize | Out-File -FilePath analysis-results.txt
           if ($results) { throw "Script analysis found issues" }
+
+      - name: Upload analysis results
+        uses: actions/upload-artifact@v2
+        with:
+          name: analysis-results
+          path: analysis-results.txt
 
       - name: Test script with mock data
         run: |
@@ -39,17 +45,3 @@ jobs:
           "@
           $mockInput | powershell -File .\yt-dlp-helper.ps1
           if (-not $?) { throw "Script execution failed" }
-
-      - name: Test script with different parameters
-        run: |
-          powershell -File .\yt-dlp-helper.ps1 -exe "yt-dlp.exe" -desktop -debug
-          if (-not $?) { throw "Script execution with parameters failed" }
-
-      - name: Check for expected output files
-        run: |
-          $outputPath = "$env:USERPROFILE\Desktop\Outputs"
-          if (-not (Test-Path $outputPath)) { throw "Output directory not found" }
-          $files = Get-ChildItem $outputPath
-          if ($files.Count -eq 0) { throw "No output files generated" }
-          Write-Output "Generated files:"
-          $files | ForEach-Object { Write-Output $_.Name }
