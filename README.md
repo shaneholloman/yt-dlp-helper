@@ -1,5 +1,7 @@
 # YT-DLP Helper Script
 
+> Inspired by @ThioJoe
+
 A user-friendly PowerShell script for easy video downloading using yt-dlp.
 
 ## Quick Start
