@@ -312,6 +312,4 @@ while ($confirm -ne "y") {
 Write-Output ""
 $command = "$downloader_exe $format $URL $options"
 Write-Output "Running Command: $command"
-Invoke-Expression "& $command"
-Write-Host "Press any key to exit..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Start-Process -FilePath $downloader_exe -ArgumentList "$format $URL $options" -NoNewWindow -Wait
