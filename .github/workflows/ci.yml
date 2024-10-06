@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install yt-dlp
+        run: |
+          Invoke-WebRequest -Uri https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -OutFile yt-dlp.exe
+          Move-Item -Path yt-dlp.exe -Destination $env:USERPROFILE\yt-dlp.exe
+          $oldPath = [Environment]::GetEnvironmentVariable("Path", "User")
+          $newPath = "$oldPath;$env:USERPROFILE"
+          [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+      - name: Run PowerShell script analysis
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Force
+          $results = Invoke-ScriptAnalyzer -Path .\yt-dlp-helper.ps1
+          $results | Format-Table -AutoSize
+          if ($results) { throw "Script analysis found issues" }
+
+      - name: Test script with mock data
+        run: |
+          $mockUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+          $mockInput = @"
+          $mockUrl
+          1
+          y
+          "@
+          $mockInput | powershell -File .\yt-dlp-helper.ps1
+          if (-not $?) { throw "Script execution failed" }
+
+      - name: Test script with different parameters
+        run: |
+          powershell -File .\yt-dlp-helper.ps1 -exe "yt-dlp.exe" -desktop -debug
+          if (-not $?) { throw "Script execution with parameters failed" }
+
+      - name: Check for expected output files
+        run: |
+          $outputPath = "$env:USERPROFILE\Desktop\Outputs"
+          if (-not (Test-Path $outputPath)) { throw "Output directory not found" }
+          $files = Get-ChildItem $outputPath
+          if ($files.Count -eq 0) { throw "No output files generated" }
+          Write-Output "Generated files:"
+          $files | ForEach-Object { Write-Output $_.Name }
